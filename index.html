@@ -9,6 +9,7 @@
 </head>
 <body>
   <div id="header">
+    <canvas id="bg3d" aria-hidden="true"></canvas>
     <div class="container">
       <nav class="new-nav">
         <div class="logo-text">DOCUMENTRY<span>EDITS</span></div>
@@ -105,7 +106,82 @@
   </div>
 </div>
   <script>
+    (function () {
+      const canvas = document.getElementById('bg3d');
+      if (!canvas) return;
 
+      const ctx = canvas.getContext('2d');
+      let width = 0;
+      let height = 0;
+      let centerX = 0;
+      let centerY = 0;
+      const particleCount = 220;
+      const particles = [];
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = canvas.clientWidth;
+        height = canvas.clientHeight;
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        centerX = width / 2;
+        centerY = height / 2;
+      }
+
+      function resetParticle(p, firstRun) {
+        p.x = (Math.random() - 0.5) * width * 1.8;
+        p.y = (Math.random() - 0.5) * height * 1.4;
+        p.z = firstRun ? Math.random() * 1200 : 1200;
+        p.speed = 1.4 + Math.random() * 2.2;
+      }
+
+      for (let i = 0; i < particleCount; i++) {
+        const p = {};
+        resetParticle(p, true);
+        particles.push(p);
+      }
+
+      let lastTime = performance.now();
+      function animate(now) {
+        const delta = Math.min((now - lastTime) / 16.67, 2.5);
+        lastTime = now;
+
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          p.z -= p.speed * delta * 7;
+
+          if (p.z <= 2) {
+            resetParticle(p, false);
+          }
+
+          const scale = 360 / p.z;
+          const x2d = centerX + p.x * scale;
+          const y2d = centerY + p.y * scale;
+
+          if (x2d < -40 || x2d > width + 40 || y2d < -40 || y2d > height + 40) {
+            resetParticle(p, false);
+            continue;
+          }
+
+          const alpha = Math.max(0.08, 1 - p.z / 1200);
+          const size = Math.max(0.7, 2.8 * alpha);
+
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255, 0, 79, ${alpha * 0.75})`;
+          ctx.arc(x2d, y2d, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+      requestAnimationFrame(animate);
+    })();
   </script>
 </body>
 </html>
